@@ -10,6 +10,8 @@ public class Scheduler{
     private int maxClientsAtTime;
     private int peakTime;
 
+    public ArrayList<Queue> getQueues() { return queues; }
+
     public int getTotalWaitingTime() {
         return totalWaitingTime;
     }
@@ -30,7 +32,7 @@ public class Scheduler{
         for (int i = 0; i < numberOfServers; i++)
         {
             Queue q = new Queue();
-            queues.set(i, q);
+            queues.add(q);
             Thread t = new Thread(q);
             threads.add(t);
             t.start();
@@ -68,6 +70,16 @@ public class Scheduler{
 
     public void shutdown()
     {
-
+        for (Thread t : threads)
+        {
+            try
+            {
+                t.interrupt();
+            }
+            catch (Exception e)
+            {
+                System.out.println(e.getMessage());
+            }
+        }
     }
 }

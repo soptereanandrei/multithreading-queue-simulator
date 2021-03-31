@@ -20,7 +20,11 @@ public class Client {
 
     public String toString()
     {
-        return new String("(" + ID + "," + timeArrival + "," + timeService + ");");
+        return new String("(" + ID + "," + timeArrival + "," + timeService + ")");
     }
 
+    public void decrementTimeService()
+    {
+        timeService--;
+    }
 }

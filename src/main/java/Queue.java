@@ -1,3 +1,4 @@
+import java.util.Arrays;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -21,16 +22,17 @@ public class Queue implements Runnable{
     public void run() {
         while (true) {
             if (clients.size() > 0) {
-                Client servingClient = clients.poll();
-                int servingTime = servingClient.getProcessingTime();
-                try {
-                    Thread.sleep(servingTime * 1000);//sleep servingTime seconds
+                Client servingClient = clients.peek();
+                while (servingClient.getProcessingTime() > 0) {
+                    try {
+                        Thread.sleep(1000);//sleep servingTime seconds
+                        waitingPeriod.addAndGet(-1);
+                        servingClient.decrementTimeService();
+                    } catch (Exception e) {
+                        System.out.println(e.getMessage());
+                    }
                 }
-                catch (Exception e)
-                {
-                    System.out.println(e.getMessage());
-                }
-                waitingPeriod.addAndGet(-servingTime);
+                clients.poll();
             }
         }
     }
@@ -45,5 +47,17 @@ public class Queue implements Runnable{
     public int getNumberOfClients()
     {
         return clients.size();
+    }
+
+    public Client[] getClients()
+    {
+        Client[] clientsCopy = new Client[getNumberOfClients()];
+        Object[] obj = clients.toArray();
+        for (int i = 0; i < obj.length; i++)
+        {
+            clientsCopy[i] = (Client)obj[i];
+        }
+
+        return clientsCopy;
     }
 }

@@ -2,13 +2,13 @@ import java.util.*;
 
 public class QueuesSimulator implements Runnable {
 
-    public int timeLimit;
-    public int N;
-    public int Q;
-    public int minArrivalTime;
-    public int maxArrivalTime;
-    public int minProcessingTime;
-    public int maxProcessingTime;
+    public int timeLimit = 30;
+    public int N = 4;
+    public int Q = 2;
+    public int minArrivalTime = 2;
+    public int maxArrivalTime = 6;
+    public int minProcessingTime = 2;
+    public int maxProcessingTime = 4;
 
     private Scheduler scheduler;
     private ArrayList<Client> clients = new ArrayList<Client>();
@@ -56,7 +56,7 @@ public class QueuesSimulator implements Runnable {
                     scheduler.dispatchClient(clients.get(0), currentTime);
                     clients.remove(0);
                 }
-                currentTime++;
+                getSnapshot(currentTime);
                 try {
                     Thread.sleep(1000);//sleep 1 second
                 }
@@ -64,8 +64,38 @@ public class QueuesSimulator implements Runnable {
                 {
                     System.out.println(e.getMessage());
                 }
+                currentTime++;
             }
+            scheduler.shutdown();
     }
+
+    public void getSnapshot(int currentTime)
+    {
+        System.out.println("Time: " + currentTime);
+        System.out.print("Waiting clients: ");
+        for (Client c : clients)
+        {
+            System.out.print(c + "; ");
+        }
+        System.out.println();
+        int i = 1;
+        for (Queue q : scheduler.getQueues())
+        {
+            System.out.print("Queue " + i + ": ");
+            boolean closed = true;
+            for (Client c : q.getClients())
+            {
+                System.out.print(c + "; ");
+                closed = false;
+            }
+            if (closed)
+                System.out.print("closed");
+            System.out.println();
+            i++;
+        }
+        System.out.println();
+    }
+
 
     public static void main(String[] args)
     {
