@@ -1,9 +1,10 @@
 import java.util.ArrayList;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class Scheduler{
+    private int numberOfServers;
     private ArrayList<Queue> queues;
     private ArrayList<Thread> threads;
-    private int numberOfServers;
 
     private int totalWaitingTime;
     private int totalServiceTime;
@@ -48,7 +49,7 @@ public class Scheduler{
         int minimumTime = Integer.MAX_VALUE;
         int queueIndex = -1;
         int currentClients = 0;
-
+        
         for (int i = 0; i < numberOfServers; i++)
         {
             int waitingTime = queues.get(i).getWaitingPeriod().get();
@@ -68,13 +69,22 @@ public class Scheduler{
         }
     }
 
+    public boolean serversStillWorking()
+    {
+        for (Queue q : queues) {
+            if (q.getNumberOfClients() > 0)
+                return true;
+        }
+        return false;
+    }
+
     public void shutdown()
     {
         for (Thread t : threads)
         {
             try
             {
-                t.interrupt();
+                t.stop();
             }
             catch (Exception e)
             {

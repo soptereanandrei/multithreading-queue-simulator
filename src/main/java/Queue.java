@@ -51,8 +51,8 @@ public class Queue implements Runnable{
 
     public Client[] getClients()
     {
-        Client[] clientsCopy = new Client[getNumberOfClients()];
         Object[] obj = clients.toArray();
+        Client[] clientsCopy = new Client[getNumberOfClients()];
         for (int i = 0; i < obj.length; i++)
         {
             clientsCopy[i] = (Client)obj[i];

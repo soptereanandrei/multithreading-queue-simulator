@@ -1,20 +1,44 @@
-import java.util.*;
+import java.io.FileWriter;
+import java.text.DecimalFormat;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Random;
 
 public class QueuesSimulator implements Runnable {
 
-    public int timeLimit = 30;
-    public int N = 4;
-    public int Q = 2;
-    public int minArrivalTime = 2;
-    public int maxArrivalTime = 6;
-    public int minProcessingTime = 2;
-    public int maxProcessingTime = 4;
+    private SimulatorView view;
+    private int timeLimit = 30;
+    private int N = 4;
+    private int Q = 2;
+    private int minArrivalTime = 2;
+    private int maxArrivalTime = 6;
+    private int minProcessingTime = 2;
+    private int maxProcessingTime = 4;
 
     private Scheduler scheduler;
     private ArrayList<Client> clients = new ArrayList<Client>();
 
+    private FileWriter fileWriter;
+
     public QueuesSimulator()
     {
+        scheduler = new Scheduler(Q);
+        generateNRandomClients();
+    }
+
+    public QueuesSimulator(SimulatorView view, int timeLimit, int N, int Q, int minArrivalTime, int maxArrivalTime, int minProcessingTime, int maxProcessingTime, FileWriter fileWriter)
+    {
+        this.view = view;
+        this.timeLimit = timeLimit;
+        this.N = N;
+        this.Q = Q;
+        this.minArrivalTime = minArrivalTime;
+        this.maxArrivalTime = maxArrivalTime;
+        this.minProcessingTime = minProcessingTime;
+        this.maxProcessingTime = maxProcessingTime;
+        this.fileWriter = fileWriter;
+
         scheduler = new Scheduler(Q);
         generateNRandomClients();
     }
@@ -49,14 +73,17 @@ public class QueuesSimulator implements Runnable {
     @Override
     public void run() {
             int currentTime = 0;
-            while(currentTime < timeLimit)
+            while(currentTime < timeLimit && (clients.size() > 0 || scheduler.serversStillWorking()))
             {
                 while (clients.size() > 0 && clients.get(0).getArrivalTime() <= currentTime)
                 {
                     scheduler.dispatchClient(clients.get(0), currentTime);
                     clients.remove(0);
                 }
-                getSnapshot(currentTime);
+
+                view.printSimulationStage(currentTime, getViewSnapshot());
+                writeLog(getSnapshot(currentTime));
+
                 try {
                     Thread.sleep(1000);//sleep 1 second
                 }
@@ -67,40 +94,93 @@ public class QueuesSimulator implements Runnable {
                 currentTime++;
             }
             scheduler.shutdown();
+
+            float averageWaitingTime = (float)scheduler.getTotalWaitingTime() / N;
+            float averageServiceTime = (float)scheduler.getTotalServiceTime() / N;
+            int peakHour = scheduler.getPeakTime();
+
+            view.printSimulationResults(averageWaitingTime, averageServiceTime, peakHour);
+            writeLog(createResults(averageWaitingTime, averageServiceTime, peakHour));
     }
 
-    public void getSnapshot(int currentTime)
+    private String getViewSnapshot()
     {
-        System.out.println("Time: " + currentTime);
-        System.out.print("Waiting clients: ");
-        for (Client c : clients)
-        {
-            System.out.print(c + "; ");
-        }
-        System.out.println();
+        String result = new String();
+
+        result += "Waiting clients : ";
+        for (int i = 0; i < clients.size(); i++)
+            result += "* ";
+        result += "\n\n";
+
         int i = 1;
         for (Queue q : scheduler.getQueues())
         {
-            System.out.print("Queue " + i + ": ");
+            result += "Queue " + i + ": ";
+            i++;
+
+            for (int j = 0; j < q.getNumberOfClients(); j++)
+                result += "* ";
+
+            result += "\n\n";
+        }
+
+        return result;
+    }
+
+    private void writeLog(String log)
+    {
+        try {
+            fileWriter.write(log);
+            fileWriter.flush();
+        } catch (Exception e)
+        {
+            System.out.println(e.getMessage());
+        }
+    }
+
+    private String getSnapshot(int currentTime)
+    {
+        String result = new String();
+        result += "Time: " + currentTime + "\n";
+        result += "Waiting clients: ";
+        for (Client c : clients)
+        {
+            result += c + "; ";
+        }
+        result += "\n";
+        int i = 1;
+        for (Queue q : scheduler.getQueues())
+        {
+            result += "Queue " + i + ": ";
             boolean closed = true;
             for (Client c : q.getClients())
             {
-                System.out.print(c + "; ");
+                result += c + "; ";
                 closed = false;
             }
             if (closed)
-                System.out.print("closed");
-            System.out.println();
+                result += "closed";
+            result += "\n";
             i++;
         }
-        System.out.println();
+        result += "\n";
+
+        return result;
     }
 
-
-    public static void main(String[] args)
+    private String createResults(float averageWaitingTime, float averageServiceTime, int peakHour)
     {
-        QueuesSimulator sim = new QueuesSimulator();
-        Thread mainThread = new Thread(sim);
-        mainThread.start();
+        String result = new String();
+        DecimalFormat decimalFormat = new DecimalFormat(".00");
+        result += "Average waiting time: " + decimalFormat.format(averageServiceTime) + "\n";
+        result += "Average serving time: " + decimalFormat.format(averageServiceTime) + "\n";
+        result += "Peak hour: " + peakHour;
+
+        return result;
+    }
+
+    public void shutdown()
+    {
+        scheduler.shutdown();
     }
 }
