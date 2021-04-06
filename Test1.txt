@@ -135,4 +135,4 @@ Queue 2: closed
 
 Average waiting time: 2,25
 Average servint time: 2,25
-Peak hour: 0
+Peak hour: 4
